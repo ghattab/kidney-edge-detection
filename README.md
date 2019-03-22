@@ -1,3 +1,10 @@
+## Method
+
+![](/figures/net.pdf){: .center-image }
+> Modified U-Net Architecture. Modified with 3 convolutional layers on each level apart from the bottleneck. After each max pooling layer (red) a dropout layer (dark gray) was added. Each dropout layer has a dropout value set to $0.1$ except the first one, it is set to $0.05$. The blue layers in combination with the following convolutional layers depict transpose convolutional layers. Arrows represent skip connections. Concatenation is done after the transpose convolution.
+
+## Results
+
 
 ## License
 This work is available under an Attribution-NonCommercial-ShareAlike 4.0
