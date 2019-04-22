@@ -24,6 +24,10 @@ import datetime
 
 #--------------------------------------------------------------------------------------------------
 #  !!!!!!!!! Keras needs to be modified locally to work correctly with this dataset !!!!!!!!!!!!  #
+# This is already done if this files parent directory conatins a folder named:                    #
+#   modified_keras_preprocessing/                                                                 #
+#                                                                                                 #
+# Otherwise you can do it manually:                                                               #
 # use 'pip show keras' to get the keras install location path                                     #
 # open the file keras_preprocessing/image.py                                                      #
 # inside the load_img method edit:                                                                #
@@ -52,10 +56,6 @@ unet_netScale = 1 # Scales the net *down* by factor; should be 1 for original un
 unet_netAlpha = 0.1 # Negative slope of all but last relu activation functions !! 0 seems not to work !!
 unet_netErrorFunction = "mean_squared_error" # mean absolute error does not converge !! ; "mean_squared_error"
 
-fusionNet_netScale = 2 
-fusionNet_netAlpha = 0.2 
-fusionNet_netErrorFunction = "mean_squared_error" 
-
 # Custom accuracy to compute correct pixel coverage between 0 - 1
 def acc(y_true, y_pred):
     min1 = tf.minimum(y_true, 1)
@@ -64,146 +64,6 @@ def acc(y_true, y_pred):
     nonzero = tf.count_nonzero(eq)
     size = tf.size(y_pred,out_type=tf.int64)
     return tf.divide(nonzero, size)
-
-def fusionNet(input_size):
-    global fusionNet_netScale
-    global fusionNet_netAlpha
-    global fusionNet_netErrorFunction
-
-    netScale = fusionNet_netScale
-    netAlpha = fusionNet_netAlpha
-    netErrorFunction = fusionNet_netErrorFunction
-
-    input_size = input_size + (4,)
-    
-    n = netScale
-
-    inputs = Input(input_size)
-
-    conv1 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(inputs))
-    # Resid 1
-    conv_resid_1 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv1))
-    conv_resid_1 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_1))
-    conv_resid_1 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_1))
-    conv_resid_1 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_1))
-    # Add Resid
-    add_1 = add([conv1, conv_resid_1]) 
-    conv_last_1 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(add_1)) # Long skip 1
-
-    pool1 = MaxPooling2D(pool_size=(2, 2))(conv_last_1)
-    conv2 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(pool1))
-    # Resid 2
-    conv_resid_2 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv2))
-    conv_resid_2 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_2))
-    conv_resid_2 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_2))
-    conv_resid_2 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_2))
-    # Add Resid
-    add_2 = add([conv2, conv_resid_2])
-    conv_last_2 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(add_2)) # Long skip 2
-
-    pool2 = MaxPooling2D(pool_size=(2, 2))(conv_last_2)
-    conv3 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(pool2))
-    # Resid 3
-    conv_resid_3 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv3))
-    conv_resid_3 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_3))
-    conv_resid_3 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_3))
-    conv_resid_3 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_3))
-    # Add Resid
-    add_3 = add([conv3, conv_resid_3])
-    conv_last_3 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(add_3)) # Long skip 3
-
-    pool3 = MaxPooling2D(pool_size=(2, 2))(conv_last_3)
-    conv4 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(pool3))
-    # Resid 4
-    conv_resid_4 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv4))
-    conv_resid_4 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_4))
-    conv_resid_4 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_4))
-    conv_resid_4 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_4))
-    # Add Resid
-    add_4 = add([conv4, conv_resid_4])
-    conv_last_4 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(add_4)) # Long skip 4
-
-    # Bridge
-    pool4 = MaxPooling2D(pool_size=(2, 2))(conv_last_4)
-    conv5 = BatchNormalization()(Conv2D(int(1024 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(pool4))
-    # Resid 5
-    conv_resid_5 = BatchNormalization()(Conv2D(int(1024 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv5))
-    conv_resid_5 = BatchNormalization()(Conv2D(int(1024 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_5))
-    conv_resid_5 = BatchNormalization()(Conv2D(int(1024 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_5))
-    conv_resid_5 = BatchNormalization()(Conv2D(int(1024 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_5))
-    # Add Resid
-    add_5 = add([conv5, conv_resid_5])
-    conv_last_5 = BatchNormalization()(Conv2D(int(1024 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(add_5))
-    
-    # Up 1
-    up1 = Conv2DTranspose(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same', strides=(2,2))(conv_last_5)
-    long_add_1 = add([up1, conv_last_4])
-
-    conv6 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(long_add_1))
-    # Resid 6
-    conv_resid_6 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv6))
-    conv_resid_6 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_6))
-    conv_resid_6 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_6))
-    conv_resid_6 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_6))
-    # Add Resid
-    add_6 = add([conv6, conv_resid_6])
-    conv_last_6 = BatchNormalization()(Conv2D(int(512 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(add_6))
-
-    # Up 2
-    up2 = Conv2DTranspose(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same', strides=(2,2))(conv_last_6)
-    long_add_2 = add([up2, conv_last_3])
-
-    conv7 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(long_add_2))
-    # Resid 7
-    conv_resid_7 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv7))
-    conv_resid_7 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_7))
-    conv_resid_7 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_7))
-    conv_resid_7 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_7))
-    # Add Resid
-    add_7 = add([conv7, conv_resid_7])
-    conv_last_7 = BatchNormalization()(Conv2D(int(256 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(add_7))
-
-    # Up 3
-    up3 = Conv2DTranspose(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same', strides=(2,2))(conv_last_7)
-    long_add_3 = add([up3, conv_last_2])
-
-    conv8 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(long_add_3))
-    # Resid 8
-    conv_resid_8 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv8))
-    conv_resid_8 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_8))
-    conv_resid_8 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_8))
-    conv_resid_8 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_8))
-    # Add Resid
-    add_8 = add([conv8, conv_resid_8])
-    conv_last_8 = BatchNormalization()(Conv2D(int(128 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(add_8))
-
-    # Up 4
-    up4 = Conv2DTranspose(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same', strides=(2,2))(conv_last_8)
-    long_add_4 = add([up4, conv_last_1])
-
-    conv9 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(long_add_4))
-    # Resid 9
-    conv_resid_9 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv9))
-    conv_resid_9 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_9))
-    conv_resid_9 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_9))
-    conv_resid_9 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(conv_resid_9))
-    # Add Resid
-    add_9 = add([conv9, conv_resid_9])
-    conv_last_9 = BatchNormalization()(Conv2D(int(64 / n), 3, activation = "relu", kernel_initializer="he_normal", padding = 'same')(add_9))
-
-    # Last Part
-    out = Conv2D(2, 3, activation = "relu", padding = 'same')(conv_last_9)
-    out = Conv2D(1, 3, activation = lambda x: keras.relu(x, alpha=0, max_value=265, threshold=0), padding = 'same')(out)
-
-    model = Model(input = inputs, output = out)
-
-    model.compile(optimizer = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, amsgrad=False), 
-        loss = netErrorFunction, 
-        metrics = [accuracy])
-    
-    print(model.summary())
-
-    return model
 
 
 def unet(input_size):
@@ -334,8 +194,6 @@ def applyModel(net, testFileList, originalDataPath, weightsPath):
     model = None
     if net == "unet":
         model = unet(targetSize)
-    elif net == "fusionNet":
-        model = fusionNet(targetSize)
     else:
         print("Error: Unknown net name: {}".format(net))
         return
@@ -446,8 +304,6 @@ def train(net, seed=None, leaveOut=None, checkpoint=None, checkpointEpoch=None):
     model = None
     if net == "unet":
         model = unet(targetSize)
-    elif net == "fusionNet":
-        model = fusionNet(targetSize)
     else:
         print("Error: Unknown net name: {}".format(net))
         return
@@ -502,9 +358,6 @@ def train(net, seed=None, leaveOut=None, checkpoint=None, checkpointEpoch=None):
         classes=xSubfolders,
         color_mode="rgba",
         target_size=targetSize,
-        # save_to_dir='../testTrain/aug',
-        # save_prefix="input",
-        # shuffle=False,
         class_mode=None,
         batch_size=batchSize,
         subset="training",
@@ -515,9 +368,6 @@ def train(net, seed=None, leaveOut=None, checkpoint=None, checkpointEpoch=None):
         classes=xSubfolders,
         color_mode="rgba",
         target_size=targetSize,
-        # save_to_dir='../testTrain/aug',
-        # save_prefix="input",
-        # shuffle=False,
         class_mode=None,
         batch_size=batchSize,
         subset="validation",
@@ -528,9 +378,6 @@ def train(net, seed=None, leaveOut=None, checkpoint=None, checkpointEpoch=None):
         classes=ySubfolders,
         color_mode="grayscale",
         target_size=targetSize,
-        # save_to_dir='../testTrain/aug',
-        # save_prefix="ground_truth",
-        # shuffle=False,
         class_mode=None,
         batch_size=batchSize,
         subset="training",
@@ -541,9 +388,6 @@ def train(net, seed=None, leaveOut=None, checkpoint=None, checkpointEpoch=None):
         classes=ySubfolders,
         color_mode="grayscale",
         target_size=targetSize,
-        # save_to_dir='../testTrain/aug',
-        # save_prefix="input",
-        # shuffle=False,
         class_mode=None,
         batch_size=batchSize,
         subset="validation",
@@ -553,27 +397,6 @@ def train(net, seed=None, leaveOut=None, checkpoint=None, checkpointEpoch=None):
     train_generator = zip(x_generator, y_generator)
     validation_generator = zip(x_validation_generator, y_validation_generator)
 
-    # Mit den folgende aukommentierten Zeilen kann getestet werden, ob die keras preprocessing manipulation funktioniert hat
-    # im = Image.open(baseTrainingPath + "/x1/frame000.png")
-    
-    # Mit next(x_generator)[0] kann das erste bild des mächsten batches manuell abgefragt werden
-    # nach der konvertierung mit .astype(unit8) kann das Bild als Text gespeichert werden und manuell überprüft werden, ob
-    # bei einem alpha Wert von 0 die RGB Werte ebenfalls 0 sind.
-    # Dies ist manchmal normal, wenn das Bild beispielsweise gedreht wird ist der neue Bildausschnitt am Rand immer [0, 0, 0, 0]
-
-    ## im.load()
-    ## bands = im.split()
-    ## bands = [b.resize(targetSize, Image.LINEAR) for b in bands]
-    ## im = Image.merge('RGBA', bands)
-
-    # np.set_printoptions(threshold=np.nan)
-    # with open("test.txt", "w") as f:
-    #     f.write(str((next(x_generator)[0]).astype(np.uint8)))
-        # f.write(str(list(im.resize(targetSize).getdata())))
-        # f.write(str(list(im.getdata())))
-    # imageio.imwrite("test.png", next(x_generator)[0].astype(np.uint8))
-
-
     model.fit_generator(
         train_generator,
         steps_per_epoch=math.ceil(numImages * (1.0 - validationSplit) / batchSize),
@@ -581,23 +404,23 @@ def train(net, seed=None, leaveOut=None, checkpoint=None, checkpointEpoch=None):
         validation_steps=math.ceil(numImages * validationSplit / batchSize),
         epochs=epochs,
         callbacks=callbacks_list)
-    
-    # Old way of training
-    # model.fit(x=np.asarray(x), y=np.asarray(y), epochs=100, validation_split=0.1, verbose=1, batch_size=5, callbacks=callbacks_list)
 
 def printUsage():
-    print("Use train as first parameter to train network and predict to apply the trained network to test data.")
-    print("The second parameter determins wich net to use. Either use unet or fusionNet")
+    print("Use 'train' as first parameter to train the network or 'predict' to apply the trained network to test data.")
+    print("When using predict, additional parameters are (testFileList, originalDataPath, weightsPath)")
+    print("Where:")
+    print("     testFileList: List of input image file names to predict using the network")
+    print("     originalDataPath: Base path to the images defined in testFileList")
+    print("     weightsPath: Path to weights file to use during prediction")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         printUsage()
     else:
-        net = sys.argv[2]
         if (sys.argv[1] == "train"):
-            train(net)
+            train("unet")
         elif (sys.argv[1] == "predict"):
-            applyModel(net)
+            applyModel("unet", sys.argv[2], sys.argv[3], sys.argv[4])
         else:
             printUsage() 
 	

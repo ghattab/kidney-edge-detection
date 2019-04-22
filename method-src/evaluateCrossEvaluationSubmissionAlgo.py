@@ -12,15 +12,27 @@ import sys
 from scipy import ndimage
 from skimage import morphology, measure
 
-class SDFError:
 
+""" Script to compare the predicted boundaries to the reference boundaries
+	regarding Precision, Recall, SDE, IOU-BB, IOU-{20, 15, 10, 5, 0}
+"""
+
+class SDFError:
+	"""	Calculates the SDF Error (SDE) by first calculating precsison and recall from a signed distance
+		field around the reference boundary
+	"""
     def __init__(self):
         pass
 
     def get_error(self, ground_truth_frame, entry_frame):
-
-        # skeleton_ground_truth = (ground_truth_frame == 255) * 1
-        # skeleton_entry = (entry_frame == 255) * 1
+    	""" Returns a tuple of (precision, recall, sde) for a reference boundary comparing it to 
+    		a predicted boundary
+    		ground_truth_frame: Image frame containing the reference boundary.
+    							Grayscale with boundary pixel = 1, background pixel = 0
+    		entry_frame:		Image frame containing the predicted boudary.
+    							Grayscale with boundary pixel = 1, background pixel = 0
+    		returns:			(precision, recall, sde)
+    	"""
 
         contour_ground_truth = ground_truth_frame == 1
         contour_entry = entry_frame == 1 
@@ -51,6 +63,10 @@ class SDFError:
         return (precision, recall, score)
 
 def set_bounding_boxes_to_one(image):
+	""" Sets all pixels belonging to the boundary box of all connected components to 1
+		image: 		Grayscale image containing connected components.
+		returns:	Grayscale image with bounding boxes set to 1, background = 0
+	"""
 	result = np.zeros(image.shape, dtype=np.uint8)
 	image_labeled = measure.label(image, background=0)
 
@@ -63,12 +79,23 @@ def set_bounding_boxes_to_one(image):
 	return result
 
 def iou_bounding_box(gt, pred):
+	""" Calcualtes the intersection over union for bounding boxes
+		gt:			Grayscale frame containing a reference boundary 
+		pred:		Grayscale frame containing a predicted boundary
+		returns: 	IOU of the bounding boxes of connected components
+	"""
 	bb_gt = set_bounding_boxes_to_one(gt)
 	bb_pred = set_bounding_boxes_to_one(pred)
 
 	return iou_with_offset(bb_gt, bb_pred, offset=0)
 
 def iou_with_offset(gt, pred, offset=0):
+	""" Calculates the IOU-{offset} of two boundaries.
+		gt:			Grayscale frame containing a reference boundary 
+		pred:		Grayscale frame containing a predicted boundary
+		offset:		Determines how many pixels of the boundaries will be dilated before IOU calculation
+		returns:	IOU-{offset}
+	"""
 	dilated_gt = gt
 	if offset > 0:
 		# Dilate to add symmetrix border around skeletonized gt
@@ -90,26 +117,11 @@ def iou_with_offset(gt, pred, offset=0):
 
 	return intersection / union
 
-# Old IOU calculation
-# def getIOU(gt, pred):
-# 	gt = (gt == 255) * 1
-# 	pred = (pred == 255) * 1
-
-# 	true_positive_count = np.sum ( (gt == 1) & (pred == 1) )
-# 	false_positive_count = np.sum ( (gt != 1) & (pred == 1) )
-# 	false_negative_count = np.sum ( (gt == 1) & (pred != 1) )
-
-# 	intersection = true_positive_count
-# 	union = true_positive_count + false_negative_count + false_positive_count
-
-# 	if union == 0 and intersection == 0:
-# 		return 1
-# 	elif union == 0:
-# 		return 0
-
-# 	return intersection / union
-
 def loadImage(path):
+	""" Loads an image from a given path as numpy matrix (grayscale)
+		path: 		Path to image to load
+		returns:	Grayscale image matrix
+	"""
 	image = cv2.imread(path, 0)
 	if not (image.shape[1] == 1280 and image.shape[0] == 1024):
 		image = image[28:28+1024, 320:320+1280]
@@ -117,6 +129,15 @@ def loadImage(path):
 	return image
 
 def getImagePair(generatedBoundariesPath, generatedBoundariesIdentifier, boundarySubsets, groundTruthPath, groundTruthSubsetIdentifier):
+	""" Loads images pairwise from reference image folder and predicted boundary folder.
+		See evaluateSubset() and compareSets() for identifier usage. 
+		generatedBoundariesPath: Base path for predicted boundary frames
+		generatedBoundariesIdentifier: Sub path of generatedBoundariesPath with {} for subset identification
+		boundarySubsets: List of subsets to evaluate 
+		groundTruthPath: Base path to reference frames
+		groundTruthSubsetIdentifier: Sub path of groundTruthPath with {} for subset identification
+		returns: Tuple of (image Name, predicted image, reference image)
+	"""
 	for boundarySubset in boundarySubsets:
 		subsetPath = generatedBoundariesPath + generatedBoundariesIdentifier.format(boundarySubset)
 
@@ -134,11 +155,16 @@ def getImagePair(generatedBoundariesPath, generatedBoundariesIdentifier, boundar
 				yield ("x" + str(boundarySubset) + "/" + file, generated, groundTruth)
 
 def compairImagePair(groundThruthContourPoints, generatedContourPoints):
+	""" Returns (precision, recall, sde) for a set of ground truth boundary points and predicted boundary points
+	"""
 	sdfError = SDFError()
 
 	return sdfError.get_error(groundThruthContourPoints, generatedContourPoints)
 
 def compareSets(generatedBoundariesPath, generatedBoundariesIdentifier, boundarySubsets, groundTruthPath, groundTruthSubsetIdentifier, csvName):
+	""" Compares all frames in the specified data subsets regarding precision, recall, sde, BB-IOU, BB-{20, 15, 10, 5, 0} scores
+		csvName: Name of output csv file containing all results
+	"""
 	with open(csvName + ".csv", "w") as out:
 		out.write("Path, Precision, Recall, SDE, BB-IOU, IOU-20, IOU-15, IOU-10, IOU-5, IOU-0\n")
 		scoreList = []
@@ -204,6 +230,15 @@ def compareSets(generatedBoundariesPath, generatedBoundariesIdentifier, boundary
 		out.write("median, {}, {}, {}, {}, {}, {}, {}, {}, {}\n".format(medianPrecision, medianRecall, medianScore, medianbbIOU, medianIOU20, medianIOU15, medianIOU10, medianIOU5, medianIOU0))
 
 def evaluateSubset(params):
+	""" Entry point for evaluation of the predicted boundaries of a specific algorithm
+		Designed for usage of parallel workers each evaluating one subset of one algorithms output.
+		params: Tuple of (valSubset: Which subset to evaluate, 
+						  algorithm: Which algorithms output, 
+						  useStrict: Use the sctricct or non-strict output of the algorithm, 
+						  baseDataPath: Base path to predicted images directory, 
+						  basegtPath: Base path to reference images)
+
+	"""
 	valSubset, algorithm, useStrict, baseDataPath, basegtPath = params
 
 	baseBoundariesPath = None
@@ -268,7 +303,12 @@ def main(algorithm, strict, baseDataPath, basegtPath):
 	p.map(evaluateSubset, params)
 
 if __name__ == "__main__":
-
+	""" Calls the main function with the following parameters from the command line
+		param 1: algorithm: Which algorithm to evaluate
+		param 2: strict: Whether or not to use the strict version (string: use "strict" for strict version; arbitrary string for non-strict version)
+		param 3: baseDataPath: Base path to directory containing all algorithms output images
+		param 4: basegtPath: Base path to directory containing all reference images  
+	"""
 	algorithm = sys.argv[1]
 	strict = (sys.argv[2] == "strict")
 	baseDataPath = sys.argv[3]

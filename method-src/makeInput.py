@@ -9,13 +9,20 @@ from matplotlib import pyplot as plt
 import math
 import argparse
 
-# parser = argparse.ArgumentParser(description='Calculate disp map.')
-# parser.add_argument('-d', metavar='dataPath', type=str,
-#                     help='Data path')
-# args = parser.parse_args()
 
-# dataPath = "D:/KidneyChallenge/kidney_1_4_training/kidney_dataset_1/"
+""" Script to convert the left frames and disparity maps into one image as input for the network.
+	dataPaths are paths to folders containing the following two folders:
+		- croppedLeft_frames: Created by crop.py 
+		- dispariy: created by disparity.cpp
+	Outputs combined images to folder named x/ inside dataPaths 
+""" 
+
+
 dataPaths = [	
+				"Data/kidney_dataset_1/",
+				"Data/kidney_dataset_2/",
+				"Data/kidney_dataset_3/",
+				"Data/kidney_dataset_4/",
 				"Data/kidney_dataset_5/",
 				"Data/kidney_dataset_6/",
 				"Data/kidney_dataset_7/",
@@ -28,7 +35,7 @@ dataPaths = [
 				"Data/kidney_dataset_14/",
 				"Data/kidney_dataset_15/"
 ]
-# dataPath = args.d
+
 leftFolder = "croppedLeft_frames/"
 disparityDirectory = "disparity/"
 
@@ -60,6 +67,8 @@ def getImagePair(dataPath):
 		yield left, disp, imageName
 
 def combineImages(dataPath, counter):
+	""" Combines the left eye image with the depth map along the z-axis 
+	"""
 	for leftImage, disp, imageName in getImagePair(dataPath):
 		exDisp = np.expand_dims(disp, axis=2)
 		combined = np.concatenate((leftImage, exDisp), axis=2)
@@ -67,7 +76,7 @@ def combineImages(dataPath, counter):
 		cv2.imwrite(dataPath + destination + str(counter) + "/" + imageName, combined, [cv2.IMWRITE_PNG_COMPRESSION, 0])
 
 if __name__ == "__main__":
-	counter = 4
+	counter = 1
 	for dataPath in dataPaths:
 		counter += 1
 		if not os.path.exists(dataPath + destination):

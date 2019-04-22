@@ -10,13 +10,12 @@ import math
 import argparse
 from scipy.interpolate import splprep, splev
 
+""" Script to crop images to size 1280x1024 starting at position (320, 28).
+	Saves images to folder with prefix "cropped".
+	dataPaths is a list of all directories conataining images which need to be cropped.
+	The source images should be 1920x1080
+"""
 
-# parser = argparse.ArgumentParser(description='Calculate disp map.')
-# parser.add_argument('-d', metavar='dataPath', type=str,
-#                     help='Data path')
-# args = parser.parse_args()
-
-# dataPath = "D:/KidneyChallenge/kidney_1_4_training/kidney_dataset_1/"
 dataPaths = [	"Data/kidney_dataset_5/",
 				"Data/kidney_dataset_6/",
 				"Data/kidney_dataset_7/",
@@ -29,7 +28,8 @@ dataPaths = [	"Data/kidney_dataset_5/",
 				"Data/kidney_dataset_14/",
 				"Data/kidney_dataset_15/"
 ]
-# dataPath = args.d
+
+
 rightFolder = "right_frames/"
 leftFolder = "left_frames/"
 
