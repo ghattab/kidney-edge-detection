@@ -1,7 +1,7 @@
 ## Evaluation
 
 ### Quantitative
-Please refer to [EVAL.md](https://github.com/ghattab/kidney-edge-detection/blob/master/EVAL.md) for the full evaluation results of the leave one out cross validation using our method, and the vanilla U-net implementation. A comparison to the 2017 challenge winner is also reported.
+Please refer to [EVAL.md](https://github.com/ghattab/kidney-edge-detection/blob/master/EVAL.md) for the full evaluation results of the leave one out cross validation using our method, and the vanilla U-net implementation. A comparison to the 2017 challenge winner is also reported. Raw data can be found under the analysis folder.
 
 ### Qualitative
 | ![challenge](https://raw.githubusercontent.com/ghattab/kidney-edge-detection/master/figures/challenge.png?token=ADJ6FUJBQMIGCBTBTTONGUK5ANQHM) | 
