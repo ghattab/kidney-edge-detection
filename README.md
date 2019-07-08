@@ -16,6 +16,28 @@ Qualitative examples are reported under [figures](https://github.com/ghattab/kid
 ![](/figures/net.png)
 > Modified U-Net Architecture. Modified with 3 convolutional layers on each level apart from the bottleneck. After each max pooling layer (red) a dropout layer (dark gray) was added. Each dropout layer has a dropout value set to 0.1 except the first one, it is set to 0.05. The blue layers in combination with the following convolutional layers depict transpose convolutional layers. Arrows represent skip connections. Concatenation is done after the transpose convolution.
 
+### Random seeds
+
+The networks where trained with the following random seeds. To reproduce our results use the ``--seeds`` argument of ``train.py``.
+
+| LOOCV |    Seed   |
+|-------|:---------:|
+|   1   | 211338299 |
+|   2   |  66992261 |
+|   3   | 612395054 |
+|   4   |  29634478 |
+|   5   |  82962696 |
+|   6   |  12737697 |
+|   7   |  37241791 |
+|   8   |   133833  |
+|   9   |  4908350  |
+|   10  |  8416991  |
+|   11  | 957795873 |
+|   12  | 572028758 |
+|   13  | 750409111 |
+|   14  |  66171044 |
+|   15  |  27924390 |
+|   16  | 233707090 |
 
 ## License
 This work is available under an Attribution-NonCommercial-ShareAlike 4.0
