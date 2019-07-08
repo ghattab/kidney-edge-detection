@@ -4,27 +4,17 @@
 Please refer to [EVAL.md](https://github.com/ghattab/kidney-edge-detection/blob/master/EVAL.md) for the full evaluation results of the leave one out cross validation using our method, and the vanilla U-net implementation. A comparison to the 2017 challenge winner is also reported. Raw data can be found under the analysis folder.
 
 ### Qualitative
-| ![challenge](https://raw.githubusercontent.com/ghattab/kidney-edge-detection/master/figures/challenge.png?token=ADJ6FUJBQMIGCBTBTTONGUK5ANQHM) | 
-|:--:| 
-| Example challenges in kidney boundary detection. Left image is from the left camera and right image is the same image with an overlay of the inverted signed-distance the reference boundary (purple) and the predicted boundary (teal). Top row shows two frames from data set 18 and bottom row shows two others from data set 16. |
+Qualitative examples are reported under `kidney-edge-detection/figures/`.
 
+
+* `input.png` Example RGBD input for frame 100 of data set 1. Left: original left image center: disparity, and right: RGB image.
+* `challenge.png` Example challenges in kidney boundary detection. Left image is from the left camera and right image is the same image with an overlay of the inverted signed-distance the reference boundary (purple) and the predicted boundary (teal). Top row shows two frames from data set 18 and bottom row shows two others from data set 16.
+* `output.png` Example output for frame 100 of data set 1. Left: raw network output and right: postprocessed image.
 
 ## Network
 
 ![](/figures/net.png)
 > Modified U-Net Architecture. Modified with 3 convolutional layers on each level apart from the bottleneck. After each max pooling layer (red) a dropout layer (dark gray) was added. Each dropout layer has a dropout value set to 0.1 except the first one, it is set to 0.05. The blue layers in combination with the following convolutional layers depict transpose convolutional layers. Arrows represent skip connections. Concatenation is done after the transpose convolution.
-
-### Input
-
-| ![input](https://raw.githubusercontent.com/ghattab/kidney-edge-detection/master/figures/input.png?token=ADJ6FUMYWPTSZ6T2RPQFS5C5ANQHQ) | 
-|:--:| 
-| Example RGBD input for frame 100 of data set 1. Left: original left image center: RGBD input image and right: disparity.|
-
-### Output
-
-| ![output](https://raw.githubusercontent.com/ghattab/kidney-edge-detection/master/figures/output.png?token=ADJ6FUKQOJVJFUBMPETQN5C5ANQHY) | 
-|:--:| 
-| Example output for frame 100 of data set 1. Left: raw network output and right: postprocessed image.|
 
 
 ## License
