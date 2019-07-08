@@ -4,7 +4,7 @@
 Please refer to [EVAL.md](https://github.com/ghattab/kidney-edge-detection/blob/master/EVAL.md) for the full evaluation results of the leave one out cross validation using our method, and the vanilla U-net implementation. A comparison to the 2017 challenge winner is also reported. Raw data can be found under the analysis folder.
 
 ### Qualitative
-Qualitative examples are reported under `figures/`.
+Qualitative examples are reported under [figures](https://github.com/ghattab/kidney-edge-detection/tree/master/figures).
 
 
 * `input.png` Example RGBD input for frame 100 of data set 1. Left: original left image center: disparity, and right: RGB image.
