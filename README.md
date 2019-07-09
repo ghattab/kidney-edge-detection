@@ -20,6 +20,9 @@ Qualitative examples are reported under [figures](https://github.com/ghattab/kid
 
 The networks where trained with the following random seeds. To reproduce our results use the ``--seeds`` argument of ``train.py``.
 
+<table>
+<tr><td>
+
 | LOOCV |    Seed   |
 |-------|:---------:|
 |   1   | 211338299 |
@@ -30,6 +33,12 @@ The networks where trained with the following random seeds. To reproduce our res
 |   6   |  12737697 |
 |   7   |  37241791 |
 |   8   |   133833  |
+
+
+</td><td>
+
+| LOOCV |    Seed   |
+|-------|:---------:|
 |   9   |  4908350  |
 |   10  |  8416991  |
 |   11  | 957795873 |
@@ -38,6 +47,8 @@ The networks where trained with the following random seeds. To reproduce our res
 |   14  |  66171044 |
 |   15  |  27924390 |
 |   16  | 233707090 |
+
+</td></tr> </table>
 
 ## License
 This work is available under an Attribution-NonCommercial-ShareAlike 4.0
