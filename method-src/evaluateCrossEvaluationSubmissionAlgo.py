@@ -11,28 +11,17 @@ from multiprocessing import Pool
 import sys
 from scipy import ndimage
 from skimage import morphology, measure
-
-
-""" Script to compare the predicted boundaries to the reference boundaries
-	regarding Precision, Recall, SDE, IOU-BB, IOU-{20, 15, 10, 5, 0}
-"""
+import argparse
 
 class SDFError:
-	"""	Calculates the SDF Error (SDE) by first calculating precsison and recall from a signed distance
-		field around the reference boundary
-	"""
+
     def __init__(self):
         pass
 
     def get_error(self, ground_truth_frame, entry_frame):
-    	""" Returns a tuple of (precision, recall, sde) for a reference boundary comparing it to 
-    		a predicted boundary
-    		ground_truth_frame: Image frame containing the reference boundary.
-    							Grayscale with boundary pixel = 1, background pixel = 0
-    		entry_frame:		Image frame containing the predicted boudary.
-    							Grayscale with boundary pixel = 1, background pixel = 0
-    		returns:			(precision, recall, sde)
-    	"""
+
+        # skeleton_ground_truth = (ground_truth_frame == 255) * 1
+        # skeleton_entry = (entry_frame == 255) * 1
 
         contour_ground_truth = ground_truth_frame == 1
         contour_entry = entry_frame == 1 
@@ -63,10 +52,6 @@ class SDFError:
         return (precision, recall, score)
 
 def set_bounding_boxes_to_one(image):
-	""" Sets all pixels belonging to the boundary box of all connected components to 1
-		image: 		Grayscale image containing connected components.
-		returns:	Grayscale image with bounding boxes set to 1, background = 0
-	"""
 	result = np.zeros(image.shape, dtype=np.uint8)
 	image_labeled = measure.label(image, background=0)
 
@@ -79,26 +64,15 @@ def set_bounding_boxes_to_one(image):
 	return result
 
 def iou_bounding_box(gt, pred):
-	""" Calcualtes the intersection over union for bounding boxes
-		gt:			Grayscale frame containing a reference boundary 
-		pred:		Grayscale frame containing a predicted boundary
-		returns: 	IOU of the bounding boxes of connected components
-	"""
 	bb_gt = set_bounding_boxes_to_one(gt)
 	bb_pred = set_bounding_boxes_to_one(pred)
 
 	return iou_with_offset(bb_gt, bb_pred, offset=0)
 
 def iou_with_offset(gt, pred, offset=0):
-	""" Calculates the IOU-{offset} of two boundaries.
-		gt:			Grayscale frame containing a reference boundary 
-		pred:		Grayscale frame containing a predicted boundary
-		offset:		Determines how many pixels of the boundaries will be dilated before IOU calculation
-		returns:	IOU-{offset}
-	"""
 	dilated_gt = gt
 	if offset > 0:
-		# Dilate to add symmetrix border around skeletonized gt
+		# Dilate to add symmetric border around skeletonized gt
 		selem = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
 		for _ in range(0, offset):
 			dilated_gt = morphology.binary_dilation(dilated_gt, selem=selem)
@@ -117,54 +91,68 @@ def iou_with_offset(gt, pred, offset=0):
 
 	return intersection / union
 
+# Old IOU calculation
+# def getIOU(gt, pred):
+# 	gt = (gt == 255) * 1
+# 	pred = (pred == 255) * 1
+
+# 	true_positive_count = np.sum ( (gt == 1) & (pred == 1) )
+# 	false_positive_count = np.sum ( (gt != 1) & (pred == 1) )
+# 	false_negative_count = np.sum ( (gt == 1) & (pred != 1) )
+
+# 	intersection = true_positive_count
+# 	union = true_positive_count + false_negative_count + false_positive_count
+
+# 	if union == 0 and intersection == 0:
+# 		return 1
+# 	elif union == 0:
+# 		return 0
+
+# 	return intersection / union
+
 def loadImage(path):
-	""" Loads an image from a given path as numpy matrix (grayscale)
-		path: 		Path to image to load
-		returns:	Grayscale image matrix
-	"""
+	print(path)
 	image = cv2.imread(path, 0)
 	if not (image.shape[1] == 1280 and image.shape[0] == 1024):
 		image = image[28:28+1024, 320:320+1280]
 
 	return image
 
-def getImagePair(generatedBoundariesPath, generatedBoundariesIdentifier, boundarySubsets, groundTruthPath, groundTruthSubsetIdentifier):
-	""" Loads images pairwise from reference image folder and predicted boundary folder.
-		See evaluateSubset() and compareSets() for identifier usage. 
-		generatedBoundariesPath: Base path for predicted boundary frames
-		generatedBoundariesIdentifier: Sub path of generatedBoundariesPath with {} for subset identification
-		boundarySubsets: List of subsets to evaluate 
-		groundTruthPath: Base path to reference frames
-		groundTruthSubsetIdentifier: Sub path of groundTruthPath with {} for subset identification
-		returns: Tuple of (image Name, predicted image, reference image)
-	"""
-	for boundarySubset in boundarySubsets:
-		subsetPath = generatedBoundariesPath + generatedBoundariesIdentifier.format(boundarySubset)
+def getImagePair(test_data_path, gt_data_path):
+	files = os.listdir(test_data_path)
+	sorted_files = sorted(files)
 
-		files = os.listdir(subsetPath)
-		files.sort(key=lambda x: os.path.basename(x))
+	for file in sorted_files:
+		if file.endswith(".png"):
+			test_image = loadImage(os.path.join(test_data_path, file))
+			gt_image = loadImage(os.path.join(gt_data_path, file))
 
-		for file in files:
-			if file.endswith(".png"):
-				generatedBoundaryFilePath = subsetPath + "/" + file
-				gtBoundaryFilePath = groundTruthPath + groundTruthSubsetIdentifier.format(boundarySubset) + "/" + file
+			yield (file, test_image, gt_image)
 
-				generated = loadImage(generatedBoundaryFilePath)
-				groundTruth = loadImage(gtBoundaryFilePath)
+# def getImagePair(generatedBoundariesPath, generatedBoundariesIdentifier, boundarySubsets, groundTruthPath, groundTruthSubsetIdentifier):
+# 	for boundarySubset in boundarySubsets:
+# 		subsetPath = generatedBoundariesPath + generatedBoundariesIdentifier.format(boundarySubset)
+
+# 		files = os.listdir(subsetPath)
+# 		files.sort(key=lambda x: os.path.basename(x))
+
+# 		for file in files:
+# 			if file.endswith(".png"):
+# 				generatedBoundaryFilePath = subsetPath + "/" + file
+# 				gtBoundaryFilePath = groundTruthPath + groundTruthSubsetIdentifier.format(boundarySubset) + "/" + file
+
+# 				generated = loadImage(generatedBoundaryFilePath)
+# 				groundTruth = loadImage(gtBoundaryFilePath)
 				
-				yield ("x" + str(boundarySubset) + "/" + file, generated, groundTruth)
+# 				yield ("x" + str(boundarySubset) + "/" + file, generated, groundTruth)
 
 def compairImagePair(groundThruthContourPoints, generatedContourPoints):
-	""" Returns (precision, recall, sde) for a set of ground truth boundary points and predicted boundary points
-	"""
 	sdfError = SDFError()
 
 	return sdfError.get_error(groundThruthContourPoints, generatedContourPoints)
 
-def compareSets(generatedBoundariesPath, generatedBoundariesIdentifier, boundarySubsets, groundTruthPath, groundTruthSubsetIdentifier, csvName):
-	""" Compares all frames in the specified data subsets regarding precision, recall, sde, BB-IOU, BB-{20, 15, 10, 5, 0} scores
-		csvName: Name of output csv file containing all results
-	"""
+# def compareSets(generatedBoundariesPath, generatedBoundariesIdentifier, boundarySubsets, groundTruthPath, groundTruthSubsetIdentifier, csvName):
+def compareSets(test_data_path, gt_data_path, csvName):
 	with open(csvName + ".csv", "w") as out:
 		out.write("Path, Precision, Recall, SDE, BB-IOU, IOU-20, IOU-15, IOU-10, IOU-5, IOU-0\n")
 		scoreList = []
@@ -176,7 +164,8 @@ def compareSets(generatedBoundariesPath, generatedBoundariesIdentifier, boundary
 		iou15List = []
 		iou20List = []
 		bbiouList = []
-		for (namePath, generatedImage, gtImage) in getImagePair(generatedBoundariesPath, generatedBoundariesIdentifier, boundarySubsets, groundTruthPath, groundTruthSubsetIdentifier):
+		# for (namePath, generatedImage, gtImage) in getImagePair(generatedBoundariesPath, generatedBoundariesIdentifier, boundarySubsets, groundTruthPath, groundTruthSubsetIdentifier):
+		for (namePath, generatedImage, gtImage) in getImagePair(test_data_path, gt_data_path):
 
 			generatedImage = (generatedImage == 255) * 1
 			gtImage = (gtImage == 255) * 1
@@ -227,91 +216,77 @@ def compareSets(generatedBoundariesPath, generatedBoundariesIdentifier, boundary
 		medianbbIOU = statistics.median(bbiouList)
 
 		out.write("avg, {}, {}, {}, {}, {}, {}, {}, {}, {}\n".format(avgPrecision, avgRecall, avgScore, avgbbIOU, avgIOU20 ,avgIOU15, avgIOU10, avgIOU5, avgIOU0))
-		out.write("median, {}, {}, {}, {}, {}, {}, {}, {}, {}\n".format(medianPrecision, medianRecall, medianScore, medianbbIOU, medianIOU20, medianIOU15, medianIOU10, medianIOU5, medianIOU0))
+		out.write("median, {}, {}, {}, {}, {}, {}, {}, {}, {}\n".format(medianPrecision, medianRecall, medianScore, medianbbIOU, medianIOU20, medianIOU15, medianIOU10, medianIOU5, medianIOU0))
 
-def evaluateSubset(params):
-	""" Entry point for evaluation of the predicted boundaries of a specific algorithm
-		Designed for usage of parallel workers each evaluating one subset of one algorithms output.
-		params: Tuple of (valSubset: Which subset to evaluate, 
-						  algorithm: Which algorithms output, 
-						  useStrict: Use the sctricct or non-strict output of the algorithm, 
-						  baseDataPath: Base path to predicted images directory, 
-						  basegtPath: Base path to reference images)
+def main(args):
+	os.makedirs(args.save_folder, exist_ok=True)
 
-	"""
-	valSubset, algorithm, useStrict, baseDataPath, basegtPath = params
-
-	baseBoundariesPath = None
-	if useStrict:
-		baseBoundariesPath = baseDataPath + "crossValidationPredictions/{}/strictVersion/".format(algorithm)
-	else:
-		baseBoundariesPath = baseDataPath + "crossValidationPredictions/{}/nonStrictVersion/".format(algorithm)
-	gtPath = basegtPath + "skeletonized_processed_labels/" # "processed_labels/"
-
-	print("Evaluating validation set {}".format(valSubset))
-	valSubsetPath = None
-	if useStrict:
-		valSubsetPath = baseBoundariesPath + "boundary_strict_wo{}/test/".format(str(valSubset))
-	else:
-		valSubsetPath = baseBoundariesPath + "boundary_wo{}/test/".format(str(valSubset))
-
-	allSubsets = [x for x in range(1, 21)]
-
-	if valSubset in allSubsets: # The test set that was left out during training
-		allSubsets.remove(valSubset)
-
-	savePath = None
-	if useStrict:
-		savePath = baseDataPath + "crossValidationPredictions/evaluations/{}/strictVersion/".format(algorithm)
-	else:
-		savePath = baseDataPath + "crossValidationPredictions/evaluations/{}/nonStrictVersion/".format(algorithm)
+	allSubsets = args.subsets
+	savePath = args.save_folder if args.save_folder.endswith("/") else args.save_folder + "/"
 
 	os.makedirs(savePath, exist_ok=True)
 
-	# Optimize: Cache results from AllExcept_ and use these values for 16-20
-	compareSets(valSubsetPath, 
-				"x{}", 
-				allSubsets, 
-				gtPath, 
-				"kidney_dataset_{}/croppedGround_truth", 
-				savePath + "evalBoundaryWo{}_AllExcept{}".format(valSubset, valSubset))
-	compareSets(valSubsetPath, 
-				"x{}", 
-				[16, 17 ,18, 19, 20], 
-				gtPath, 
-				"kidney_dataset_{}/croppedGround_truth", 
-				savePath + "evalBoundaryWo{}_16_to_20".format(valSubset))
-	if valSubset < 16:
-		compareSets(valSubsetPath, 
-					"x{}", 
-					[valSubset], 
-					gtPath, 
-					"kidney_dataset_{}/croppedGround_truth", 
-					savePath + "evalBoundaryWo{}_Only{}".format(valSubset, valSubset))
+	for subset in allSubsets:
+		test_data_set = args.test_data_foldername.format(subset)
+		gt_data_set = args.gt_data_foldername.format(subset)
+
+		test_data_path = os.path.join(args.test_data_path, test_data_set)
+		gt_data_path = os.path.join(args.gt_data_path, gt_data_set)
+
+		compareSets(test_data_path,
+					gt_data_path, 
+					savePath + "evaluation_dataset_{}".format(subset))
+
+		# compareSets(args.test_data_path,
+		# 			args.test_data_foldername,
+		# 			[16, 17 ,18, 19, 20], 
+		# 			args.gt_data_path, 
+		# 			args.gt_data_foldername, 
+		# 			savePath + "evalBoundaryWo{}_16_to_20".format(valSubset))
+
+		# if valSubset < 16 and valSubset > 0:
+		# 	compareSets(args.test_data_path,
+		# 				args.test_data_foldername,
+		# 				[valSubset], 
+		# 				args.gt_data_path, 
+		# 				args.gt_data_foldername, 
+		# 				savePath + "evalBoundaryWo{}_Only{}".format(valSubset, valSubset))
 
 
-def main(algorithm, strict, baseDataPath, basegtPath):
-	p = Pool()
+# def main(algorithm, strict, baseDataPath, basegtPath):
+	# p = Pool()
 
-	valSubsets = [x for x in range(1, 16)]
-	algorithmList = [algorithm] * 15
-	strictList = [strict] * 15
-	baseDataPathList = [baseDataPath]  * 15
-	basegtPathList = [basegtPath] * 15
+	# valSubsets = [x for x in range(15, 16)]
+	# algorithmList = [algorithm] * 1
+	# strictList = [strict] * 1
+	# baseDataPathList = [baseDataPath]  * 1
+	# basegtPathList = [basegtPath] * 1
 
-	params = zip(valSubsets, algorithmList, strictList, baseDataPathList, basegtPathList)
-	p.map(evaluateSubset, params)
+	# params = zip(valSubsets, algorithmList, strictList, baseDataPathList, basegtPathList)
+	# p.map(evaluateSubset, params)
+
 
 if __name__ == "__main__":
-	""" Calls the main function with the following parameters from the command line
-		param 1: algorithm: Which algorithm to evaluate
-		param 2: strict: Whether or not to use the strict version (string: use "strict" for strict version; arbitrary string for non-strict version)
-		param 3: baseDataPath: Base path to directory containing all algorithms output images
-		param 4: basegtPath: Base path to directory containing all reference images  
-	"""
-	algorithm = sys.argv[1]
-	strict = (sys.argv[2] == "strict")
-	baseDataPath = sys.argv[3]
-	basegtPath = sys.argv[4]
 
-	main(algorithm, strict, baseDataPath, basegtPath)
+	parser = argparse.ArgumentParser()
+
+	parser.add_argument("--gt_data_path", type=str, required=True)
+	parser.add_argument("--test_data_path", type=str, required=True)
+
+	parser.add_argument("--gt_data_foldername", type=str, default="kidney_dataset_{}")    
+	parser.add_argument("--test_data_foldername", type=str, default="x{}")
+
+	parser.add_argument("--save_folder", type=str, required=True)	
+
+	parser.add_argument("--subsets", nargs="+", type=int, default=[x for x in range(1, 21)], help="Test sets to evaluate. Default 1-20")    
+
+	args = parser.parse_args()
+
+	# algorithm = sys.argv[1]
+	# strict = (sys.argv[2] == "strict")
+	# baseDataPath = sys.argv[3]
+	# basegtPath = sys.argv[4]
+
+	# main(algorithm, strict, baseDataPath, basegtPath)
+
+	main(args)
