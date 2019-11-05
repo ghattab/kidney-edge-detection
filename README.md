@@ -50,6 +50,50 @@ The networks where trained with the following random seeds. To reproduce our res
 
 </td></tr> </table>
 
+# Running the KiBo-Net
+
+The easiest way to inference images using the KiBo-Net is using our Docker container located at: https://hub.docker.com/r/fuxxel/kibo-net
+
+The Docker container already contains an example data set (test set 18). The process the example data set execute the following commands:
+```
+# Pull the docker image 
+docker pull fuxxel/kibo-net:gpu
+
+# use nvidia-docker to run the network using the GPU (interactively)
+nvidia-docker run -it fuxxel/kibo-net:gpu bash 
+```
+Inside the docker container navigate to the kibo subdirectory:
+```
+cd kibo
+ll 
+# Run make once to build the disparity executable
+make
+```
+The directory contains all necessary script and test set 18 inside the folder sample_input.
+
+To start the whole processing pipeline run:
+```
+./run_pipeline.sh
+```
+The final results will be inside the sample_input/network_output directory.
+
+## Running on custom data
+
+To use your own data you can replace the content of sample_input/left_frames and sample_input/right_frames with your data.
+Additionally you need to provide a camera_calibration.txt file and place it into sample_input.
+
+The following example demonstrates which camera parameters **must** be defined:
+```
+Camera-0-F: 1084.21 1084.05                               // left camera x,y focal dist in pixels
+Camera-0-C: 580.02 506.79                                 // left camera x,y center in pixels
+Camera-0-K: -0.00069 0.00195 0.00018 0.00000 0.00000      // left camera radial distortion
+Camera-1-F: 1083.43 1083.22                               // right camera x,y focal dist in pixels
+Camera-1-C: 680.91 505.81                                 // right camera x,y center in pixels
+Camera-1-K: -0.00085 0.00245 0.00004 0.00000 0.00000      // right camera radial distortion
+Extrinsic-Omega: -0.0002 -0.0011 -0.0000                  // left to right camera rotation
+Extrinsic-T: -4.3499 0.0333 -0.0369                       // left to right camera position
+```
+
 ## License
 This work is available under an Attribution-NonCommercial-ShareAlike 4.0
 International (CC BY-NC-SA 4.0).
