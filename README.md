@@ -54,7 +54,8 @@ The networks where trained with the following random seeds. To reproduce our res
 
 The easiest way to inference images using the KiBo-Net is using our Docker container located at: https://hub.docker.com/r/fuxxel/kibo-net
 
-The Docker container already contains an example data set (test set 18). The process the example data set execute the following commands:
+The Docker container already contains an example data set (test set 18). 
+To process the example data set execute the following commands:
 ```
 # Pull the docker image 
 docker pull fuxxel/kibo-net:gpu
@@ -66,10 +67,8 @@ Inside the docker container navigate to the kibo subdirectory:
 ```
 cd kibo
 ll 
-# Run make once to build the disparity executable
-make
 ```
-The directory contains all necessary script and test set 18 inside the folder sample_input.
+The directory contains all necessary scripts and test set 18 inside the folder sample_input.
 
 To start the whole processing pipeline run:
 ```
@@ -80,7 +79,7 @@ The final results will be inside the sample_input/network_output directory.
 ## Running on custom data
 
 To use your own data you can replace the content of sample_input/left_frames and sample_input/right_frames with your data.
-Additionally you need to provide a camera_calibration.txt file and place it into sample_input.
+Additionally, you need to provide a camera_calibration.txt file and place it into sample_input.
 
 The following example demonstrates which camera parameters **must** be defined:
 ```
