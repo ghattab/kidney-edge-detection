@@ -93,6 +93,10 @@ Extrinsic-Omega: -0.0002 -0.0011 -0.0000                  // left to right camer
 Extrinsic-T: -4.3499 0.0333 -0.0369                       // left to right camera position
 ```
 
+## Paper
+If you adapt, remix, transform, or build upon the material, please cite the published paper: 
+Hattab, G., Arnold, M., Strenger, L. et al. Int J CARS (2019). https://doi.org/10.1007/s11548-019-02102-0
+
 ## License
 This work is available under an Attribution-NonCommercial-ShareAlike 4.0
 International (CC BY-NC-SA 4.0).
